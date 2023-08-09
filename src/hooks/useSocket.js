@@ -20,7 +20,7 @@ export function SocketProvider({ children }) {
     const setup = useCallback(
         async name => {
             await fetch("/api/socket");
-            const socketConnection = new WebSocket(`wss://64d4008acd7c5700087aa9d6--joyful-centaur-d19f19.netlify.app/api/socket`);
+            const socketConnection = new WebSocket(`ws://joyful-centaur-d19f19.netlify.app/api/socket`);
             socketConnection.addEventListener("open", () => {
                 setSocket(socketConnection);
                 setUser({ name: name });
