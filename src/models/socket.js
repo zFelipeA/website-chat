@@ -49,7 +49,9 @@ export default async function verifySetup(res) {
         return;
     }
 
-    const server = new WebSocketServer({ port: 80 }); //80
+    const server = new WebSocketServer({ port: 443 }); //80
+
+    console.log(server);
 
     server.on("connection", socket => {
         newClient(socket);
