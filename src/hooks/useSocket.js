@@ -9,6 +9,8 @@ export const SocketContext = createContext({
     message: [],
     setup: () => {},
     sendMessage: () => {},
+    updateMessage: () => {},
+    logout: () => {},
 });
 
 export function SocketProvider({ children }) {
@@ -17,79 +19,89 @@ export function SocketProvider({ children }) {
     const [socket, setSocket] = useState(null);
     const [message, setMessage] = useState([]);
 
-    const setup = useCallback(
-        async name => {
-            await fetch("/api/socket");
-            const socketConnection = new WebSocket(`wss://website-chat-production.up.railway.app/api/socket`);
-            socketConnection.addEventListener("open", () => {
-                setSocket(socketConnection);
-                setUser({ name: name });
-                router.push("/");
-            });
+    const setup = useCallback(async (name, avatar, lobby, password) => {
+        const socketConnection = new WebSocket(`wss://website-chat-server.onrender.com/?name=${name}&avatar=${avatar}&lobby=${lobby}&password=${password}`);
 
-            socketConnection.addEventListener("message", ({ data }) => {
-                const packet = JSON.parse(data);
-                if (packet) {
-                    switch (packet.type) {
-                        case "server-setup":
-                            setMessage(packet.content.messages);
-                            setUser({ name: name, owner_id: packet.content.owner_id });
-                            break;
-                        case "new-server-message":
-                            setMessage(packet.content.messages);
-                            break;
-                    }
+        socketConnection.onopen = () => {
+            setSocket({ websocket: socketConnection, connections: {}, channel: "loading" });
+        };
+
+        socketConnection.onerror = () => {
+            setUser(null);
+            setSocket(null);
+        };
+
+        socketConnection.onclose = () => {
+            setUser(null);
+            setSocket(null);
+        };
+
+        socketConnection.onmessage = (event) => {
+            try {
+                const json = JSON.parse(event.data);
+                switch (json.type) {
+                    case "setup-client":
+                        setMessage(json.packet.messages);
+                        setUser({ id: json.packet.id, name: json.packet.name, avatar: json.packet.avatar });
+                        setSocket((preSocket) => ({ ...preSocket, connections: json.packet.connections, channel: json.packet.channel }));
+                        break;
+                    case "send-client-message":
+                        setMessage(json.packet.messages);
+                        setSocket((preSocket) => ({ ...preSocket, connections: json.packet.connections }));
+                        break;
+                    case "update-client-connections":
+                        setSocket((preSocket) => ({ ...preSocket, connections: json.packet.connections }));
+                        break;
                 }
-            });
-        },
-        [router]
-    );
+            } catch (error) {
+                console.log("> erro ao receber mensagem", error);
+            }
+        };
+    }, []);
 
     const sendMessage = useCallback(
-        async message => {
+        async (message) => {
             if (!socket) {
                 return false;
             }
 
-            if (!user || !user.owner_id) {
-                return false;
-            }
+            const data = JSON.stringify({
+                type: "new-client-message",
+                content: {
+                    message,
+                },
+            });
 
-            socket.send(
-                JSON.stringify({
-                    type: "new-client-message",
-                    content: {
-                        message,
-                        owner_name: user.name,
-                        owner_id: user.owner_id,
-                    },
-                })
-            );
+            socket.websocket.send(data);
         },
-        [socket, user]
+        [socket]
     );
 
     const logout = useCallback(async () => {
-        if (!user) {
+        if (!socket) {
             return false;
         }
 
-        socket.close(1000, "disconnect");
         setUser(null);
+        setSocket(null);
         router.push("/");
-    }, [user, socket, router]);
+        socket.websocket.close(1000, "disconnect");
+    }, [socket, router]);
 
     useEffect(() => {
-        if (socket) return () => socket.close(1000, "disconnect");
-    }, [socket]);
+        if (socket && socket.channel !== "loading") {
+            return () => socket.websocket.close(1000, "disconnect");
+        }
+    }, []);
 
-    const SocketContextValue = {
+    const socketContextValue = {
         user,
+        socket,
         message,
         setup,
-        logout,
         sendMessage,
+        logout,
     };
 
-    return <SocketContext.Provider value={SocketContextValue}>{children}</SocketContext.Provider>;
+    return <SocketContext.Provider value={socketContextValue}>{children}</SocketContext.Provider>;
 }

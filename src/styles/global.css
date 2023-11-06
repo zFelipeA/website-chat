@@ -35,7 +35,7 @@ textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #3f8cff;
+    background: #5b97ec;
 }
 
 ::-webkit-slider-thumb {
@@ -44,7 +44,7 @@ textarea {
     width: 20px;
     height: 20px;
     border-radius: 50px;
-    background: #3f8cff;
+    background: #5b97ec;
     cursor: pointer;
 }
 
@@ -52,6 +52,6 @@ textarea {
     width: 20px;
     height: 20px;
     border-radius: 50px;
-    background: #3f8cff;
+    background: #5b97ec;
     cursor: pointer;
 }

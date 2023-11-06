@@ -39,7 +39,15 @@ export default function Send() {
                     <label htmlFor="send-message" className="sr-only">
                         Digite sua mensagem
                     </label>
-                    <input ref={messageRef} required={true} id="send-message" name="send-message" type="text" placeholder="Digite sua mensagem" className="w-full h-full text-[1.3rem] focus:outline-none" />
+                    <input
+                        ref={messageRef}
+                        required={true}
+                        id="send-message"
+                        name="send-message"
+                        type="text"
+                        placeholder="Digite sua mensagem"
+                        className="w-full h-full text-[1.3rem] focus:outline-none"
+                    />
                 </form>
             </div>
 
